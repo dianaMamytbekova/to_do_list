@@ -3,7 +3,6 @@ from datetime import datetime
 
 DB_PATH = 'db/todo.db'
 
-
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -17,7 +16,6 @@ def init_db():
         ''')
         conn.commit()
 
-
 def add_task_db(task_text):
     created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with sqlite3.connect(DB_PATH) as conn:
@@ -25,7 +23,6 @@ def add_task_db(task_text):
         cursor.execute('INSERT INTO tasks (text, created_at, status) VALUES (?, ?, ?)', (task_text, created_at, 0))
         conn.commit()
         return cursor.lastrowid
-
 
 def get_tasks(sort_by_date=True, sort_by_status=False):
     with sqlite3.connect(DB_PATH) as conn:
@@ -37,16 +34,20 @@ def get_tasks(sort_by_date=True, sort_by_status=False):
         cursor.execute(f'SELECT id, text, created_at, status FROM tasks {order_clause}')
         return cursor.fetchall()
 
-
 def update_task_db(task_id, new_text):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute('UPDATE tasks SET text = ? WHERE id = ?', (new_text, task_id))
         conn.commit()
 
-
 def update_task_status(task_id, status):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute('UPDATE tasks SET status = ? WHERE id = ?', (int(status), task_id))
+        conn.commit()
+
+def clear_completed_tasks():
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM tasks WHERE status = 1')
         conn.commit()

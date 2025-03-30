@@ -2,7 +2,6 @@ import flet as ft
 from db import main_db
 from datetime import datetime
 
-
 def main(page: ft.Page):
     page.title = 'Todo List'
     page.padding = 40 
@@ -47,10 +46,13 @@ def main(page: ft.Page):
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
     def add_task(e):
-        if task_input.value.strip():
+        if task_input.value.strip() and len(task_input.value) <= 100:
             main_db.add_task_db(task_input.value)
             task_input.value = ""
             load_tasks()
+        else:
+            warning_message.visible = True
+            page.update()
 
     def toggle_sort(e):
         nonlocal sort_by_date
@@ -62,22 +64,29 @@ def main(page: ft.Page):
         sort_by_status = not sort_by_status
         load_tasks()
 
+    def clear_completed_tasks(e):
+        main_db.clear_completed_tasks()
+        load_tasks()
+
     task_input = ft.TextField(hint_text='Добавьте задачу', expand=True, dense=True, on_submit=add_task)
     add_button = ft.ElevatedButton("Добавить", on_click=add_task, icon=ft.Icons.ADD)
 
     sort_button = ft.ElevatedButton("📅 Сортировать по дате", on_click=toggle_sort)
     sort_status_button = ft.ElevatedButton("✅ Сортировать по статусу", on_click=toggle_sort_status)
+    clear_completed_button = ft.ElevatedButton("Очистить выполненные", on_click=clear_completed_tasks)
+
+    warning_message = ft.Text("Задача слишком длинная! Максимум 100 символов.", color=ft.Colors.RED_400, visible=False)
 
     page.add(
         ft.Column([
             ft.Row([task_input, add_button], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Row([sort_button, sort_status_button], alignment=ft.MainAxisAlignment.CENTER),
-            task_list
+            ft.Row([sort_button, sort_status_button, clear_completed_button], alignment=ft.MainAxisAlignment.CENTER),
+            task_list,
+            warning_message
         ])
     )
 
     load_tasks()
-
 
 if __name__ == '__main__':
     main_db.init_db()
