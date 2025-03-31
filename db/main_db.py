@@ -1,53 +1,55 @@
 import sqlite3
 from datetime import datetime
 
-DB_PATH = 'db/todo.db'
+DB_PATH = 'db/tasks.db'
 
-def init_db():
+def initialize_db():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                text TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                status INTEGER DEFAULT 0
+                description TEXT NOT NULL,
+                date_added TEXT NOT NULL,
+                task_status INTEGER DEFAULT 0
             )
         ''')
         conn.commit()
 
-def add_task_db(task_text):
-    created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+def insert_task(description):
+    date_added = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO tasks (text, created_at, status) VALUES (?, ?, ?)', (task_text, created_at, 0))
+        cursor.execute('INSERT INTO tasks (description, date_added, task_status) VALUES (?, ?, ?)', (description, date_added, 0))
         conn.commit()
         return cursor.lastrowid
 
-def get_tasks(sort_by_date=True, sort_by_status=False):
+def fetch_tasks(sort_by_creation_date=True, sort_by_completion_status=False, filter_in_progress=False):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        order_clause = "ORDER BY created_at DESC" if sort_by_date else "ORDER BY created_at ASC"
-        if sort_by_status:
-            order_clause = "ORDER BY status ASC, created_at DESC" if sort_by_date else "ORDER BY status ASC, created_at ASC"
+        order_by_clause = "ORDER BY date_added DESC" if sort_by_creation_date else "ORDER BY date_added ASC"
+        if sort_by_completion_status:
+            order_by_clause = "ORDER BY task_status ASC, date_added DESC" if sort_by_creation_date else "ORDER BY task_status ASC, date_added ASC"
         
-        cursor.execute(f'SELECT id, text, created_at, status FROM tasks {order_clause}')
+        where_clause = "WHERE task_status = 2" if filter_in_progress else ""
+        
+        cursor.execute(f'SELECT id, description, date_added, task_status FROM tasks {where_clause} {order_by_clause}')
         return cursor.fetchall()
 
-def update_task_db(task_id, new_text):
+def modify_task(task_id, new_description):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute('UPDATE tasks SET text = ? WHERE id = ?', (new_text, task_id))
+        cursor.execute('UPDATE tasks SET description = ? WHERE id = ?', (new_description, task_id))
         conn.commit()
 
-def update_task_status(task_id, status):
+def update_task_status(task_id, new_status):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute('UPDATE tasks SET status = ? WHERE id = ?', (int(status), task_id))
+        cursor.execute('UPDATE tasks SET task_status = ? WHERE id = ?', (int(new_status), task_id))
         conn.commit()
 
 def clear_completed_tasks():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM tasks WHERE status = 1')
+        cursor.execute('DELETE FROM tasks WHERE task_status = 1')
         conn.commit()
